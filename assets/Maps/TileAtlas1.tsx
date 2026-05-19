@@ -2,6 +2,9 @@
 <tileset version="1.10" tiledversion="1.11.2" name="TileAtlas1" tilewidth="256" tileheight="256" tilecount="3" columns="0">
  <grid orientation="orthogonal" width="1" height="1"/>
  <tile id="12">
+  <properties>
+   <property name="NotWalkable" type="bool" value="true"/>
+  </properties>
   <image source="../Tiles/StoneObject1.png" width="256" height="256"/>
   <objectgroup draworder="index" id="2">
    <object id="19" x="112" y="135.667">

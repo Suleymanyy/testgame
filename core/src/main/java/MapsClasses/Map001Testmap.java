@@ -82,8 +82,8 @@ public class Map001Testmap implements Screen {
         enemy.update(delta);
 
         ScreenUtils.clear(0.15f, 0.15f, 0.2f, 1f);
-    float PlayerX = player.getPosition().x;
-    float PlayerY = player.getPosition().y;
+        float PlayerX = player.getPosition().x;
+        float PlayerY = player.getPosition().y;
 
         player.update(delta);
 
