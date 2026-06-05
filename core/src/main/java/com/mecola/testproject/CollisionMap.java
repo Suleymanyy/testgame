@@ -63,7 +63,7 @@ public class CollisionMap implements CollisionProvider {
         // =========================================
         // SIMPLE MANUAL TRANSFORMS
         // =========================================
-
+/*
         float cosA = (float)Math.cos(Math.toRadians(45));
         float sinA = (float)Math.sin(Math.toRadians(45));
 
@@ -97,7 +97,7 @@ public class CollisionMap implements CollisionProvider {
         }
         */
 
-        // =========================================
+        // =========================================*/
 
         return new Polygon(verts);
     }

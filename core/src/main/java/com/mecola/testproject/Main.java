@@ -2,6 +2,7 @@ package com.mecola.testproject;
 
 import MapsClasses.Logo1Screen;
 import MapsClasses.Map001Testmap;
+import MapsClasses.Map002Testmap2;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
@@ -54,7 +55,7 @@ public class Main extends Game {
             System.out.println("timer = " + timer);
             if (timer >= 2f) {
                 System.out.println("Switching screen");
-                setScreen(new Map001Testmap());
+                setScreen(new Map002Testmap2());
 
                 switched = true;
             }
