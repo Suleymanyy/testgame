@@ -325,6 +325,12 @@ public class EntityKnight {
     public void setTarget(Vector2 target) { this.target = target; }
     public Vector2 getPosition() { return position; }
 
+
+    public float getSortY() {
+        return position.y;
+    }
+
+
     public void dispose() {
         animationController.dispose();
     }
