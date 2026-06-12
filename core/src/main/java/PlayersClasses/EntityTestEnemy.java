@@ -6,10 +6,11 @@ import com.badlogic.gdx.math.Polygon;
 import com.badlogic.gdx.math.Vector2;
 import com.mecola.testproject.CollisionProvider;
 
+
 import java.util.ArrayList;
 import java.util.List;
 
-public class EntityTestEnemy {
+public class EntityTestEnemy implements PlayersClasses.YSortable {
 
     private int HP = 75;
     private int Damage = 10;
@@ -305,6 +306,16 @@ public class EntityTestEnemy {
 
             path.add(new PathNode(end, dir, dirVec.nor()));
         }
+    }
+
+    @Override
+    public float getDepthY() {
+        return getPosition().y;
+    }
+
+    @Override
+    public boolean isYSorted() {
+        return true;
     }
 
     public void render(SpriteBatch batch) {

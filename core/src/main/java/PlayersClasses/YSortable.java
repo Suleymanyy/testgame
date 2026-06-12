@@ -1,9 +1,13 @@
-package com.mecola.testproject;
+package PlayersClasses;
 
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 
 public interface YSortable {
 
-    float getSortY();
+    float getDepthY();
+
+
+    boolean isYSorted();
+
     void render(SpriteBatch batch);
 }

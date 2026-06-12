@@ -10,7 +10,7 @@ import com.mecola.testproject.CollisionProvider;
 import java.util.ArrayList;
 import java.util.List;
 
-public class EntityKnight {
+public class EntityKnight implements YSortable {
 
     private int HP = 100;
     private int MaxHP = 100;
@@ -284,6 +284,16 @@ public class EntityKnight {
             direction = getDirection(Math.signum(movement.x), Math.signum(movement.y));
             move(movement.nor(), delta);
         }
+    }
+
+    @Override
+    public float getDepthY() {
+        return getPosition().y;
+    }
+
+    @Override
+    public boolean isYSorted() {
+        return true;
     }
 
     public void render(SpriteBatch batch) {

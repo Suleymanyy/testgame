@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.11.2" orientation="orthogonal" renderorder="left-up" width="30" height="30" tilewidth="128" tileheight="128" infinite="0" nextlayerid="7" nextobjectid="17">
+<map version="1.10" tiledversion="1.11.2" orientation="orthogonal" renderorder="left-up" width="30" height="30" tilewidth="128" tileheight="128" infinite="0" nextlayerid="8" nextobjectid="19">
  <tileset firstgid="1" source="TileAtlas1.tsx"/>
  <tileset firstgid="17" name="TileAtlas2" tilewidth="128" tileheight="128" tilecount="2" columns="0">
   <grid orientation="orthogonal" width="1" height="1"/>
@@ -47,6 +47,18 @@
   </object>
   <object id="16" x="3710.67" y="3709.33">
    <polygon points="0,0 -5.33333,-3585.33 126.667,-3585.33 128,-1.33333"/>
+  </object>
+ </objectgroup>
+ <objectgroup id="7" name="EntityPositions">
+  <object id="17" type="Player" x="1975.33" y="2251.33">
+   <point/>
+  </object>
+  <object id="18" type="Enemy" x="436" y="3444">
+   <properties>
+    <property name="Behavior" value="Spot"/>
+    <property name="EnemyType" value="TestEnemy"/>
+   </properties>
+   <point/>
   </object>
  </objectgroup>
 </map>
