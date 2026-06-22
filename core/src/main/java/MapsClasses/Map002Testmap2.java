@@ -4,6 +4,10 @@ import PlayersClasses.EntityKnight;
 import PlayersClasses.EntityTestEnemy;
 import PlayersClasses.YSortable;
 
+import com.badlogic.gdx.maps.MapLayer;
+import com.badlogic.gdx.maps.MapObject;
+import com.badlogic.gdx.maps.objects.PointMapObject;
+
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.Color;
@@ -23,29 +27,94 @@ import com.mecola.testproject.CollisionMap;
 
 public class Map002Testmap2 implements Screen {
 
+    // ─────────────────────────────────────────────────────────────────────
+    // CONFIG
+    // ─────────────────────────────────────────────────────────────────────
+
+    private static final int ENEMY_COUNT = 5;
+
+    private static final float ENEMY_START_X = 400;
+    private static final float ENEMY_START_Y = 500;
+    private static final float ENEMY_SPACING = 200;
+
+    // ─────────────────────────────────────────────────────────────────────
+    // MAP
+    // ─────────────────────────────────────────────────────────────────────
+
     private TiledMap map;
     private OrthogonalTiledMapRenderer renderer;
     private TiledMapTileLayer environmentLayer;
 
+    // ─────────────────────────────────────────────────────────────────────
+    // CAMERA
+    // ─────────────────────────────────────────────────────────────────────
+
     private OrthographicCamera camera;
     private OrthographicCamera UIcamera;
+
+    // ─────────────────────────────────────────────────────────────────────
+    // RENDER
+    // ─────────────────────────────────────────────────────────────────────
+
     private SpriteBatch batch;
+    private ShapeRenderer shapeRenderer;
+
+    // ─────────────────────────────────────────────────────────────────────
+    // ENTITIES
+    // ─────────────────────────────────────────────────────────────────────
 
     private EntityKnight player;
-    private EntityTestEnemy enemy;
+
+    private Array<EntityTestEnemy> enemies;
+    private Array<Vector2> enemyPositions;
+
+
+
+    // ── Все объекты участвующие в Y-sort ────────────────────────────────
+    private Array<YSortable> ySortedEntities;
+
+    // ─────────────────────────────────────────────────────────────────────
+    // COLLISION
+    // ─────────────────────────────────────────────────────────────────────
 
     private CollisionMap collisionMap;
-    private ShapeRenderer shapeRenderer;
+
+    // ─────────────────────────────────────────────────────────────────────
+    // DEBUG
+    // ─────────────────────────────────────────────────────────────────────
+
     private boolean debug = true;
 
-    // ── Список усіх сутностей, що беруть участь у Y-sort ──
-    private Array<YSortable> ySortedEntities;
+    // ─────────────────────────────────────────────────────────────────────
+    // SHOW
+    // ─────────────────────────────────────────────────────────────────────
 
     @Override
     public void show() {
+
+        loadMap();
+        createCameras();
+        createRenderers();
+        createEntities();
+        setupCollision();
+        registerYSortEntities();
+    }
+
+    // ─────────────────────────────────────────────────────────────────────
+    // INITIALIZATION
+    // ─────────────────────────────────────────────────────────────────────
+
+    private void loadMap() {
+
         map = new TmxMapLoader().load("Maps/map2.tmx");
+
         renderer = new OrthogonalTiledMapRenderer(map);
-        environmentLayer = (TiledMapTileLayer) map.getLayers().get("Environment");
+
+        environmentLayer =
+            (TiledMapTileLayer) map.getLayers().get("Environment");
+    }
+
+    private void createCameras() {
 
         camera = new OrthographicCamera();
         camera.setToOrtho(false, 1920, 1080);
@@ -54,183 +123,414 @@ public class Map002Testmap2 implements Screen {
         UIcamera = new OrthographicCamera();
         UIcamera.setToOrtho(false, 1920, 1080);
         UIcamera.zoom = 0.75f;
+    }
+
+    private void createRenderers() {
 
         batch = new SpriteBatch();
+
         shapeRenderer = new ShapeRenderer();
+    }
+
+    private void createEntities() {
 
         player = new EntityKnight();
-        enemy  = new EntityTestEnemy();
 
-        try {
-            collisionMap = new CollisionMap(map);
-            player.setCollisionProvider(collisionMap);
-            enemy.setCollisionProvider(collisionMap);
-        } catch (Exception e) {
-            Gdx.app.error("Map", "Collision error: " + e.getMessage());
+        enemies = new Array<>();
+        enemyPositions = new Array<>();
+
+        MapLayer enemyLayer = map.getLayers().get("EnemyPositions");
+
+        if (enemyLayer == null) {
+            Gdx.app.error("Map", "Layer EnemyPositions not found");
+            return;
         }
 
-        // ── Реєструємо всі сутності ──────────────────────────────────────
-        ySortedEntities = new Array<>();
-        ySortedEntities.add(player);
-        ySortedEntities.add(enemy);
-        // Щоб додати ще одного: ySortedEntities.add(newEntity);
+        // ── 1. Собираем ВСЕ позиции отдельно ─────────────────────────────
+        for (MapObject object : enemyLayer.getObjects()) {
+
+            if (!(object instanceof PointMapObject)) {
+                continue;
+            }
+
+            Integer count = object.getProperties().get("Count", Integer.class);
+
+            if (count == null) {
+                continue;
+            }
+
+            float x = object.getProperties().get("x", Float.class);
+            float y = object.getProperties().get("y", Float.class);
+
+            enemyPositions.add(new Vector2(x, y));
+        }
+
+        // ── 2. Создаём врагов РОВНО по количеству позиций ────────────────
+        for (int i = 0; i < enemyPositions.size; i++) {
+
+            EntityTestEnemy enemy = new EntityTestEnemy();
+
+            enemies.add(enemy);
+        }
+
+        // ── 3. Привязываем врагов к позициям ПО ИНДЕКСУ ──────────────────
+        for (int i = 0; i < enemies.size; i++) {
+
+            Vector2 pos = enemyPositions.get(i);
+
+            enemies.get(i).getPosition().set(pos.x, pos.y);
+        }
+
+        Gdx.app.log(
+            "Map",
+            "Spawned enemies: " + enemies.size
+        );
     }
+    private void setupCollision() {
+
+        try {
+
+            collisionMap = new CollisionMap(map);
+
+            player.setCollisionProvider(collisionMap);
+
+            for (EntityTestEnemy enemy : enemies) {
+                enemy.setCollisionProvider(collisionMap);
+            }
+
+        } catch (Exception e) {
+
+            Gdx.app.error(
+                "Map",
+                "Collision error: " + e.getMessage()
+            );
+        }
+    }
+
+    private void registerYSortEntities() {
+
+        ySortedEntities = new Array<>();
+
+        ySortedEntities.add(player);
+
+        for (EntityTestEnemy enemy : enemies) {
+            ySortedEntities.add(enemy);
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────
+    // RENDER
+    // ─────────────────────────────────────────────────────────────────────
 
     @Override
     public void render(float delta) {
-        enemy.updateAI(player, delta);
-        enemy.update(delta);
-        player.update(delta);
+
+        updateEntities(delta);
 
         ScreenUtils.clear(0.15f, 0.15f, 0.2f, 1f);
 
-        camera.position.set(player.getPosition().x, player.getPosition().y, 0);
-        UIcamera.position.set(player.getPosition().x, player.getPosition().y, 0);
-        camera.update();
-        UIcamera.update();
+        updateCameras();
 
         renderer.setView(camera);
-        renderer.render(new int[]{0, 1});   // фонові шари
 
+        // ── Нижние слои ──────────────────────────────────────────────────
+        renderer.render(new int[]{0, 1});
+
+        // ── Y-sort render ────────────────────────────────────────────────
         batch.setProjectionMatrix(camera.combined);
+
         batch.begin();
-        drawEnvironmentYSorted();           // ← тут і тайли, і сутності
+
+        drawEnvironmentYSorted();
+
         batch.end();
 
-        renderer.render(new int[]{3});      // верхні шари (дахи тощо)
+        // ── Верхние слои ─────────────────────────────────────────────────
+        renderer.render(new int[]{3});
 
         handleInput();
+
         drawDebug();
     }
 
     // ─────────────────────────────────────────────────────────────────────
-    //  Y-SORT: тайли + усі зареєстровані сутності в одному проході
+    // UPDATE
     // ─────────────────────────────────────────────────────────────────────
 
-    /**
-     * Маленький контейнер, що описує один "об'єкт" черги рендеру.
-     * Або це тайл (tile != null), або сутність (entity != null).
-     */
-    private static class RenderItem {
-        // тайл
-        com.badlogic.gdx.graphics.g2d.TextureRegion tile;
-        float tileX, tileY, tileW, tileH;
+    private void updateEntities(float delta) {
 
-        // сутність
+        for (EntityTestEnemy enemy : enemies) {
+
+            enemy.updateAI(player, delta);
+
+            enemy.update(delta);
+        }
+
+        player.update(delta);
+    }
+
+    private void updateCameras() {
+
+        camera.position.set(
+            player.getPosition().x,
+            player.getPosition().y,
+            0
+        );
+
+        UIcamera.position.set(
+            player.getPosition().x,
+            player.getPosition().y,
+            0
+        );
+
+        camera.update();
+
+        UIcamera.update();
+    }
+
+    // ─────────────────────────────────────────────────────────────────────
+    // INPUT
+    // ─────────────────────────────────────────────────────────────────────
+
+    private void handleInput() {
+
+        if (!Gdx.input.justTouched()) {
+            return;
+        }
+
+        Vector3 pos = new Vector3(
+            Gdx.input.getX(),
+            Gdx.input.getY(),
+            0
+        );
+
+        camera.unproject(pos);
+
+        // ── Проверка клика по врагам ────────────────────────────────────
+        for (EntityTestEnemy enemy : enemies) {
+
+            if (enemy.getClickHitbox() != null &&
+                enemy.getClickHitbox().contains(pos.x, pos.y)) {
+
+                player.setTargetEnemy(enemy);
+
+                player.tryAttack(enemy);
+
+                return;
+            }
+        }
+
+        // ── Иначе движение ──────────────────────────────────────────────
+        player.buildPath(
+            player.getPosition(),
+            new Vector2(pos.x, pos.y)
+        );
+    }
+
+    // ─────────────────────────────────────────────────────────────────────
+    // Y SORT
+    // ─────────────────────────────────────────────────────────────────────
+
+    private static class RenderItem {
+
+        // ── Tile ────────────────────────────────────────────────────────
+        com.badlogic.gdx.graphics.g2d.TextureRegion tile;
+
+        float tileX;
+        float tileY;
+        float tileW;
+        float tileH;
+
+        // ── Entity ──────────────────────────────────────────────────────
         YSortable entity;
 
-        // ключ сортування
+        // ── Sort key ────────────────────────────────────────────────────
         float depthY;
 
-        static RenderItem ofTile(com.badlogic.gdx.graphics.g2d.TextureRegion tex,
-                                 float wx, float wy, float tw, float th) {
+        static RenderItem ofTile(
+            com.badlogic.gdx.graphics.g2d.TextureRegion tex,
+            float wx,
+            float wy,
+            float tw,
+            float th
+        ) {
+
             RenderItem item = new RenderItem();
-            item.tile   = tex;
-            item.tileX  = wx;  item.tileY = wy;
-            item.tileW  = tw;  item.tileH = th;
-            // порівнюємо по центру тайла, як було раніше
+
+            item.tile = tex;
+
+            item.tileX = wx;
+            item.tileY = wy;
+
+            item.tileW = tw;
+            item.tileH = th;
+
             item.depthY = wy + th * 0.5f;
+
             return item;
         }
 
         static RenderItem ofEntity(YSortable e) {
+
             RenderItem item = new RenderItem();
-            item.entity  = e;
-            item.depthY  = e.getDepthY();
+
+            item.entity = e;
+
+            item.depthY = e.getDepthY();
+
             return item;
         }
     }
 
-    private final Array<RenderItem> renderQueue = new Array<>(256);
+    private final Array<RenderItem> renderQueue =
+        new Array<>(256);
 
     private void drawEnvironmentYSorted() {
+
         renderQueue.clear();
 
         float tileW = environmentLayer.getTileWidth();
         float tileH = environmentLayer.getTileHeight();
+
         int maxX = environmentLayer.getWidth();
         int maxY = environmentLayer.getHeight();
 
-        // ── 1. Додаємо всі тайли ──────────────────────────────────────────
+        // ── Tiles ───────────────────────────────────────────────────────
         for (int x = 0; x < maxX; x++) {
+
             for (int y = 0; y < maxY; y++) {
-                TiledMapTileLayer.Cell cell = environmentLayer.getCell(x, y);
-                if (cell == null || cell.getTile() == null) continue;
 
-                renderQueue.add(RenderItem.ofTile(
-                    cell.getTile().getTextureRegion(),
-                    x * tileW, y * tileH, tileW, tileH
-                ));
+                TiledMapTileLayer.Cell cell =
+                    environmentLayer.getCell(x, y);
+
+                if (cell == null || cell.getTile() == null) {
+                    continue;
+                }
+
+                renderQueue.add(
+                    RenderItem.ofTile(
+                        cell.getTile().getTextureRegion(),
+                        x * tileW,
+                        y * tileH,
+                        tileW,
+                        tileH
+                    )
+                );
             }
         }
 
-        // ── 2. Додаємо сутності (лише ті, що isYSorted == true) ───────────
+        // ── Entities ────────────────────────────────────────────────────
         for (YSortable entity : ySortedEntities) {
+
             if (entity.isYSorted()) {
-                renderQueue.add(RenderItem.ofEntity(entity));
+                renderQueue.add(
+                    RenderItem.ofEntity(entity)
+                );
             }
         }
 
-        // ── 3. Сортуємо за depthY по спаданню (великий Y = далі = малюємо першим) ──
-        renderQueue.sort((a, b) -> Float.compare(b.depthY, a.depthY));
+        // ── Sort ────────────────────────────────────────────────────────
+        renderQueue.sort(
+            (a, b) -> Float.compare(b.depthY, a.depthY)
+        );
 
-        // ── 4. Рендеримо у відсортованому порядку ─────────────────────────
+        // ── Draw ────────────────────────────────────────────────────────
         for (RenderItem item : renderQueue) {
+
             if (item.tile != null) {
-                batch.draw(item.tile, item.tileX, item.tileY, item.tileW, item.tileH);
+
+                batch.draw(
+                    item.tile,
+                    item.tileX,
+                    item.tileY,
+                    item.tileW,
+                    item.tileH
+                );
+
             } else {
+
                 item.entity.render(batch);
             }
         }
     }
 
     // ─────────────────────────────────────────────────────────────────────
-
-    private void handleInput() {
-        if (Gdx.input.justTouched()) {
-            Vector3 pos = new Vector3(Gdx.input.getX(), Gdx.input.getY(), 0);
-            camera.unproject(pos);
-
-            if (enemy.getClickHitbox() != null &&
-                enemy.getClickHitbox().contains(pos.x, pos.y)) {
-                player.setTargetEnemy(enemy);
-                player.tryAttack(enemy);
-            } else {
-                player.buildPath(player.getPosition(), new Vector2(pos.x, pos.y));
-            }
-        }
-    }
+    // DEBUG
+    // ─────────────────────────────────────────────────────────────────────
 
     private void drawDebug() {
-        if (!debug || collisionMap == null) return;
 
-        shapeRenderer.setProjectionMatrix(camera.combined);
-        shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
-
-        shapeRenderer.setColor(Color.BLUE);
-        for (Polygon p : collisionMap.getPolygons()) {
-            shapeRenderer.polygon(p.getTransformedVertices());
+        if (!debug || collisionMap == null) {
+            return;
         }
 
-        shapeRenderer.setColor(Color.RED);
-        shapeRenderer.polygon(player.getHitbox().getTransformedVertices());
+        shapeRenderer.setProjectionMatrix(
+            camera.combined
+        );
 
+        shapeRenderer.begin(
+            ShapeRenderer.ShapeType.Line
+        );
+
+        // ── Collision polygons ──────────────────────────────────────────
+        shapeRenderer.setColor(Color.BLUE);
+
+        for (Polygon p : collisionMap.getPolygons()) {
+
+            shapeRenderer.polygon(
+                p.getTransformedVertices()
+            );
+        }
+
+        // ── Player ──────────────────────────────────────────────────────
+        shapeRenderer.setColor(Color.RED);
+
+        shapeRenderer.polygon(
+            player.getHitbox().getTransformedVertices()
+        );
+
+        // ── Enemies ─────────────────────────────────────────────────────
         shapeRenderer.setColor(Color.GREEN);
-        shapeRenderer.polygon(enemy.getHitbox().getTransformedVertices());
+
+        for (EntityTestEnemy enemy : enemies) {
+
+            shapeRenderer.polygon(
+                enemy.getHitbox().getTransformedVertices()
+            );
+        }
 
         shapeRenderer.end();
     }
 
-    @Override public void resize(int width, int height) {}
-    @Override public void pause() {}
-    @Override public void resume() {}
-    @Override public void hide() {}
+    // ─────────────────────────────────────────────────────────────────────
+    // SCREEN METHODS
+    // ─────────────────────────────────────────────────────────────────────
+
+    @Override
+    public void resize(int width, int height) {}
+
+    @Override
+    public void pause() {}
+
+    @Override
+    public void resume() {}
+
+    @Override
+    public void hide() {}
+
+    // ─────────────────────────────────────────────────────────────────────
+    // DISPOSE
+    // ─────────────────────────────────────────────────────────────────────
 
     @Override
     public void dispose() {
+
         map.dispose();
+
         renderer.dispose();
+
         batch.dispose();
+
         shapeRenderer.dispose();
     }
 }

@@ -12,7 +12,7 @@ import java.util.List;
 public abstract class AbstractPlayer
 
     implements YSortable
-    {
+{
 
     protected static final float SPRITE_WIDTH  = 256f;
     protected static final float SPRITE_HEIGHT = 256f;
