@@ -137,11 +137,14 @@ public class DebugConsole {
     public void execute(){
 
 
-        log("> " + input);
+        String command = input.trim();
+
+
+        log("> " + command);
 
 
 
-        if(input.equals("quit")){
+        if(command.equalsIgnoreCase("quit")){
 
 
             Gdx.app.exit();
