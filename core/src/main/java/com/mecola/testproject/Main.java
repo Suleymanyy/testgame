@@ -4,6 +4,7 @@ import MapsClasses.Logo1Screen;
 import MapsClasses.Map001Testmap;
 import MapsClasses.Map002Testmap2;
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.Input;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.maps.tiled.TiledMap;
@@ -23,14 +24,22 @@ public class Main extends Game {
     private boolean switched = false;
     private SpriteBatch batch;
     private Texture image;
+    public DebugConsole console;
+
 
     @Override
     public void create() {
 
+        batch = new SpriteBatch();
+
 
         setScreen(new Logo1Screen(this));
 
+        console = new DebugConsole();
 
+        Gdx.input.setInputProcessor(
+            new ConsoleInput(console)
+        );
 
 
 
@@ -48,6 +57,8 @@ public class Main extends Game {
     @Override
     public void render() {
         super.render();
+        batch.begin();
+
 
         if (!switched) {
 
@@ -59,7 +70,24 @@ public class Main extends Game {
 
                 switched = true;
             }
+
+
+
         }
+        if(Gdx.input.isKeyJustPressed(Input.Keys.GRAVE)){
+
+
+            console.toggle();
+
+
+        }
+        console.render(batch);
+
+
+        batch.end();
+
     }
+
+
 }
 

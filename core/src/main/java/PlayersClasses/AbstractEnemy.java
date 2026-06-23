@@ -1,5 +1,7 @@
 package PlayersClasses;
 
+import com.badlogic.gdx.math.Polygon;
+
 public abstract class AbstractEnemy
     extends AbstractPlayer {
 
@@ -23,6 +25,40 @@ public abstract class AbstractEnemy
     protected float pathTimer = 0f;
 
     protected AbstractPlayer targetPlayer;
+
+    private Polygon clickHitbox;
+
+    public AbstractEnemy() {
+
+
+        clickHitbox = new Polygon(
+            new float[]{
+
+                -40, 0,
+                -40, 200,
+                40, 200,
+                40, 0
+            }
+        );
+
+        setPosition(1200, 400);
+
+        updateClickHitbox();
+    }
+
+
+
+    public Polygon getClickHitbox() {
+        return clickHitbox;
+    }
+
+    private void updateClickHitbox() {
+
+        clickHitbox.setPosition(
+            position.x,
+            position.y
+        );
+    }
 
     public abstract void updateAI(
         AbstractPlayer player,

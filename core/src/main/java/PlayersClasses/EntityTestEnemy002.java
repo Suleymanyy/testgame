@@ -53,6 +53,8 @@ public class EntityTestEnemy002
         updateClickHitbox();
     }
 
+
+
     public Polygon getClickHitbox() {
         return clickHitbox;
     }

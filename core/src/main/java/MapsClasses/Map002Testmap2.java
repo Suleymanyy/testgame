@@ -1,5 +1,8 @@
 package MapsClasses;
 
+import java.lang.reflect.Constructor;
+
+import PlayersClasses.AbstractEnemy;
 import PlayersClasses.EntityKnight;
 import PlayersClasses.EntityTestEnemy;
 import PlayersClasses.YSortable;
@@ -65,8 +68,9 @@ public class Map002Testmap2 implements Screen {
 
     private EntityKnight player;
 
-    private Array<EntityTestEnemy> enemies;
+    private Array<AbstractEnemy> enemies;;
     private Array<Vector2> enemyPositions;
+    private Array<EnemySpawnData> enemySpawnData;
 
 
 
@@ -104,6 +108,19 @@ public class Map002Testmap2 implements Screen {
     // INITIALIZATION
     // ─────────────────────────────────────────────────────────────────────
 
+    private static class EnemySpawnData {
+
+        Vector2 position;
+        String className;
+
+
+        EnemySpawnData(Vector2 position, String className) {
+
+            this.position = position;
+            this.className = className;
+        }
+    }
+
     private void loadMap() {
 
         map = new TmxMapLoader().load("Maps/map2.tmx");
@@ -134,58 +151,173 @@ public class Map002Testmap2 implements Screen {
 
     private void createEntities() {
 
+
         player = new EntityKnight();
 
+
         enemies = new Array<>();
-        enemyPositions = new Array<>();
 
-        MapLayer enemyLayer = map.getLayers().get("EnemyPositions");
+        enemySpawnData = new Array<>();
 
-        if (enemyLayer == null) {
-            Gdx.app.error("Map", "Layer EnemyPositions not found");
+
+
+        MapLayer enemyLayer =
+            map.getLayers().get("EnemyPositions");
+
+
+
+        if(enemyLayer == null){
+
+            Gdx.app.error(
+                "Map",
+                "EnemyPositions layer missing"
+            );
+
             return;
         }
 
-        // ── 1. Собираем ВСЕ позиции отдельно ─────────────────────────────
-        for (MapObject object : enemyLayer.getObjects()) {
 
-            if (!(object instanceof PointMapObject)) {
+
+        // ─────────────────────────────
+        // Считываем точки из Tiled
+        // ─────────────────────────────
+
+        for(MapObject object : enemyLayer.getObjects()){
+
+
+            if(!(object instanceof PointMapObject)){
                 continue;
             }
 
-            Integer count = object.getProperties().get("Count", Integer.class);
 
-            if (count == null) {
+
+            String className =
+                object.getProperties()
+                    .get("Class", String.class);
+
+
+
+            if(className == null){
                 continue;
             }
 
-            float x = object.getProperties().get("x", Float.class);
-            float y = object.getProperties().get("y", Float.class);
 
-            enemyPositions.add(new Vector2(x, y));
+
+            float x =
+                object.getProperties()
+                    .get("x", Float.class);
+
+
+
+            float y =
+                object.getProperties()
+                    .get("y", Float.class);
+
+
+
+            enemySpawnData.add(
+                new EnemySpawnData(
+                    new Vector2(x,y),
+                    className
+                )
+            );
         }
 
-        // ── 2. Создаём врагов РОВНО по количеству позиций ────────────────
-        for (int i = 0; i < enemyPositions.size; i++) {
 
-            EntityTestEnemy enemy = new EntityTestEnemy();
+
+        // ─────────────────────────────
+        // Создаем врагов
+        // ─────────────────────────────
+
+        for(EnemySpawnData data : enemySpawnData){
+
+
+
+            AbstractEnemy enemy =
+                createEnemyByClass(
+                    data.className
+                );
+
+
+
+            if(enemy == null){
+                continue;
+            }
+
+
+
+            enemy.getPosition().set(
+                data.position.x,
+                data.position.y
+            );
+
+
 
             enemies.add(enemy);
         }
 
-        // ── 3. Привязываем врагов к позициям ПО ИНДЕКСУ ──────────────────
-        for (int i = 0; i < enemies.size; i++) {
-
-            Vector2 pos = enemyPositions.get(i);
-
-            enemies.get(i).getPosition().set(pos.x, pos.y);
-        }
 
         Gdx.app.log(
             "Map",
-            "Spawned enemies: " + enemies.size
+            "Spawned enemies: "
+                + enemies.size
         );
     }
+
+
+    private AbstractEnemy createEnemyByClass(String className){
+
+
+        try {
+
+
+            Class<?> enemyClass =
+                Class.forName(
+                    "PlayersClasses." + className
+                );
+
+
+
+            if(!AbstractEnemy.class.isAssignableFrom(enemyClass)){
+
+
+                Gdx.app.error(
+                    "Map",
+                    className +
+                        " is not AbstractEnemy"
+                );
+
+
+                return null;
+            }
+
+
+
+            Constructor<?> constructor =
+                enemyClass.getConstructor();
+
+
+
+            return (AbstractEnemy)
+                constructor.newInstance();
+
+
+
+        } catch(Exception e){
+
+
+            Gdx.app.error(
+                "Map",
+                "Cannot create enemy "
+                    + className
+            );
+
+
+            return null;
+        }
+    }
+
+
     private void setupCollision() {
 
         try {
@@ -194,7 +326,7 @@ public class Map002Testmap2 implements Screen {
 
             player.setCollisionProvider(collisionMap);
 
-            for (EntityTestEnemy enemy : enemies) {
+            for (AbstractEnemy enemy : enemies) {
                 enemy.setCollisionProvider(collisionMap);
             }
 
@@ -213,7 +345,7 @@ public class Map002Testmap2 implements Screen {
 
         ySortedEntities.add(player);
 
-        for (EntityTestEnemy enemy : enemies) {
+        for (AbstractEnemy enemy : enemies) {
             ySortedEntities.add(enemy);
         }
     }
@@ -259,7 +391,7 @@ public class Map002Testmap2 implements Screen {
 
     private void updateEntities(float delta) {
 
-        for (EntityTestEnemy enemy : enemies) {
+        for (AbstractEnemy enemy : enemies) {
 
             enemy.updateAI(player, delta);
 
@@ -307,7 +439,7 @@ public class Map002Testmap2 implements Screen {
         camera.unproject(pos);
 
         // ── Проверка клика по врагам ────────────────────────────────────
-        for (EntityTestEnemy enemy : enemies) {
+        for (AbstractEnemy enemy : enemies) {
 
             if (enemy.getClickHitbox() != null &&
                 enemy.getClickHitbox().contains(pos.x, pos.y)) {
@@ -492,7 +624,7 @@ public class Map002Testmap2 implements Screen {
         // ── Enemies ─────────────────────────────────────────────────────
         shapeRenderer.setColor(Color.GREEN);
 
-        for (EntityTestEnemy enemy : enemies) {
+        for (AbstractEnemy enemy : enemies) {
 
             shapeRenderer.polygon(
                 enemy.getHitbox().getTransformedVertices()

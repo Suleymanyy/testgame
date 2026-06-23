@@ -50,16 +50,18 @@
   </object>
  </objectgroup>
  <objectgroup id="7" name="EnemyPositions">
-  <object id="18" type="EntityTestEnemy" x="920" y="3360">
+  <object id="18" x="920" y="3360">
    <properties>
     <property name="Behavior" value="Spot"/>
+    <property name="Class" value="EntityTestEnemy"/>
     <property name="Count" type="int" value="1"/>
    </properties>
    <point/>
   </object>
-  <object id="19" type="EntityTestEnemy" x="668" y="2868">
+  <object id="19" x="668" y="2868">
    <properties>
     <property name="Behavior" value="Spot"/>
+    <property name="Class" value="EntityTestEnemy002"/>
     <property name="Count" type="int" value="2"/>
    </properties>
    <point/>
